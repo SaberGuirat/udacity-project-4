@@ -6,13 +6,14 @@ import { createLogger } from '../../utils/logger'
 import Axios from 'axios'
 import { Jwt } from '../../auth/Jwt'
 import { JwtPayload } from '../../auth/JwtPayload'
+import jwkToPem from 'jwk-to-pem'
 
 const logger = createLogger('auth')
 
 // TODO: Provide a URL that can be used to download a certificate that can be used
 // to verify JWT token signature.
 // To get this URL you need to go to an Auth0 page -> Show Advanced Settings -> Endpoints -> JSON Web Key Set
-const jwksUrl = '...'
+const jwksUrl = 'https://dev-qj2mauq0.us.auth0.com/.well-known/jwks.json'
 
 export const handler = async (
   event: CustomAuthorizerEvent
@@ -55,13 +56,28 @@ export const handler = async (
 }
 
 async function verifyToken(authHeader: string): Promise<JwtPayload> {
-  const token = getToken(authHeader)
-  const jwt: Jwt = decode(token, { complete: true }) as Jwt
-
-  // TODO: Implement token verification
-  // You should implement it similarly to how it was implemented for the exercise for the lesson 5
-  // You can read more about how to do this here: https://auth0.com/blog/navigating-rs256-and-jwks/
-  return undefined
+  try {
+    const token = getToken(authHeader)
+    const jwt: Jwt = decode(token, { complete: true }) as Jwt
+     // TODO: Implement token verification
+    // You should implement it similarly to how it was implemented for the exercise for the lesson 5
+    // You can read more about how to do this here: https://auth0.com/blog/navigating-rs256-and-jwks/
+    if (
+      !jwt ||
+      !jwt.header ||
+      !jwt.header.kid ||
+      !jwt.header.alg ||
+      jwt.header.alg !== 'RS256'
+    ) {
+      throw new Error('invalid JWT token')
+    }
+    const jwks_res = await Axios.get(jwksUrl)
+    const jwks_data = jwks_res.data
+    const cert = jwkToPem(jwks_data.keys[0])
+    return verify(token, cert, { algorithms: ['RS256'] }) as JwtPayload
+  } catch (error) {
+    logger.error(error.message)
+  }
 }
 
 function getToken(authHeader: string): string {
