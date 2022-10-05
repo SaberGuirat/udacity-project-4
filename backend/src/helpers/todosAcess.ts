@@ -88,13 +88,42 @@ export class TodosAccess {
 
   async deleteTodo(todoId: string, userId: string): Promise<void> {
     try {
-      logger.info(`Deleting a todo with id ${todoId} for user with id ${userId}`)
+      logger.info(
+        `Deleting a todo with id ${todoId} for user with id ${userId}`
+      )
       await this.docClient
         .delete({
           TableName: this.todosTable,
           Key: {
             todoId,
             userId
+          }
+        })
+        .promise()
+    } catch (error) {
+      logger.error(error.message)
+    }
+  }
+
+  async updateTodoAttachmentUrl(
+    todoId: string,
+    userId: string,
+    attachmentUrl: string
+  ): Promise<void> {
+    try {
+      logger.info(
+        `Updating todo with id ${todoId} attachment url for user ${userId}`
+      )
+      await this.docClient
+        .update({
+          TableName: this.todosTable,
+          Key: {
+            todoId,
+            userId
+          },
+          UpdateExpression: 'set attachmentUrl = :attachmentUrl',
+          ExpressionAttributeValues: {
+            ':attachmentUrl': attachmentUrl
           }
         })
         .promise()

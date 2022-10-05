@@ -1,5 +1,5 @@
 import { TodosAccess } from './todosAcess'
-// import { AttachmentUtils } from './attachmentUtils'
+import { AttachmentUtils } from './attachmentUtils'
 import { TodoItem } from '../models/TodoItem'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
@@ -11,7 +11,9 @@ import * as uuid from 'uuid'
 const logger = createLogger('TodosBusinessLogic')
 
 const todosAccess = new TodosAccess()
+const attachmentUtils = new AttachmentUtils()
 
+// Get Todos
 export const getTodosForUser = (userId: string): Promise<TodoItem[]> => {
   try {
     logger.info(`Getting todos for specific user with id ${userId}`)
@@ -20,6 +22,8 @@ export const getTodosForUser = (userId: string): Promise<TodoItem[]> => {
     logger.error(error.message)
   }
 }
+
+// Create Todo
 export const createTodo = async (
   createTodoRequest: CreateTodoRequest,
   userId: string
@@ -41,6 +45,7 @@ export const createTodo = async (
   }
 }
 
+//Update Todo
 export const updateTodo = async (
   todoId: string,
   userId: string,
@@ -54,6 +59,7 @@ export const updateTodo = async (
   }
 }
 
+// Delete Todo
 export const deleteTodo = async (
   todoId: string,
   userId: string
@@ -61,6 +67,22 @@ export const deleteTodo = async (
   try {
     logger.info(`Deleting a todo with id ${todoId} for user with id ${userId}`)
     return await todosAccess.deleteTodo(todoId, userId)
+  } catch (error) {
+    logger.error(error.message)
+  }
+}
+// Generate Upload Url for a Todo
+export const generateUploadUrl = async (
+  todoId: string,
+  userId: string
+): Promise<string> => {
+  try {
+    logger.info(
+      `Generating upload url for todo with id ${todoId} for user with id ${userId}`
+    )
+    const attachmentUrl = attachmentUtils.getAttachmentUrl(todoId)
+    await todosAccess.updateTodoAttachmentUrl(todoId, userId, attachmentUrl)
+    return attachmentUtils.getUploadUrl(todoId)
   } catch (error) {
     logger.error(error.message)
   }
